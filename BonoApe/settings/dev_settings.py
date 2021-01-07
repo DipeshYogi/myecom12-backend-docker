@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'drf_yasg',
     'accounts',
     'shopkeeperapp',
     'customerapp',
@@ -152,7 +153,18 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-#Cloudinary settings
+# Swagger settings
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS':{
+        "AUth Token eg: [Bearer (JWT)]":{
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+}
+
+# Cloudinary settings
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUD_NAME'),
     'API_KEY': os.environ.get('API_KEY'),

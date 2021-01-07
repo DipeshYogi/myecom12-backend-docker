@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from .serializers import AddressSerializer
+from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -8,26 +9,28 @@ from db_utils.connect import dictfetchone, dictfetchall
 from django.db import connection
 
 
-class GetUserAddress(APIView):
+class GetUserAddress(GenericAPIView):
   """Get user addresses"""
   permission_classes = [permissions.IsAuthenticated,]
+  serializer_class = AddressSerializer
 
   def get(self, request, id, format=None):
     """get user addresses"""
     addresses = Addresses.objects.filter(userid = id)
     if addresses:
-      serializer = AddressSerializer(addresses, many = True)
+      serializer = self.serializer_class(addresses, many = True)
       return Response(serializer.data)  
     else:
       return Response(status = status.HTTP_404_NOT_FOUND)
 
 
-class AddUserAddress(APIView):
+class AddUserAddress(GenericAPIView):
   """Add user addresses"""
   permission_classes = [ permissions.IsAuthenticated, ]
+  serializer_class = AddressSerializer
 
   def post(self, request, format=None):
-    serializer = AddressSerializer(data = request.data)
+    serializer = self.serializer_class(data = request.data)
     
     if serializer.is_valid():
         serializer.save(userid=request.user)
@@ -36,9 +39,10 @@ class AddUserAddress(APIView):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EditUserAddress(APIView):
+class EditUserAddress(GenericAPIView):
   """Edit user address""" 
   permission_classes = [ permissions.IsAuthenticated, ]
+  serializer_class = AddressSerializer
 
   def put(self, request, id, format=None):
     try:
@@ -46,10 +50,10 @@ class EditUserAddress(APIView):
     except Addresses.DoesNotExist:
       return Response({'msg':'No address found'}, status=status.HTTP_404_NOT_FOUND)
     
-    serializer = AddressSerializer(instance, data = request.data, partial=True)
+    serializer = self.serializer_class(instance, data = request.data, partial=True)
     if serializer.is_valid():
       addr = serializer.save()
-      return Response({'addr': AddressSerializer(addr).data})
+      return Response({'addr': self.serializer_class(addr).data})
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

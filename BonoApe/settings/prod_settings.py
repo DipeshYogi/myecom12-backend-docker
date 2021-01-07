@@ -147,6 +147,17 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 db_from_env = dj_database_url.config(default=DATABASE_URL, conn_max_age=500, ssl_require=True)
 DATABASES['default'].update(db_from_env)
 
+# Swagger settings
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS':{
+        "AUth Token eg: [Bearer (JWT)]":{
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+}
+
 # Cloudinary settings
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUD_NAME'),

@@ -2,14 +2,15 @@ from django.shortcuts import render
 from .serializers import RegisterUserSerializer, LoginUserSerializer, \
                          UserInfoSerializer, UpdateUserSerializer
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 
-class RegisterUserView(APIView):
+class RegisterUserView(GenericAPIView):
     """Register BoboApe users"""
     serializer_class = RegisterUserSerializer
 
@@ -24,7 +25,7 @@ class RegisterUserView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LoginUserView(APIView):
+class LoginUserView(GenericAPIView):
     """Login BoboApe users"""
     serializer_class = LoginUserSerializer
 
@@ -39,16 +40,18 @@ class LoginUserView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UpdateUserView(APIView):
+class UpdateUserView(GenericAPIView):
     """Update User Information"""
+    permission_classes = [permissions.IsAuthenticated,]
+    serializer_class = UpdateUserSerializer
 
     def put(self, request, id,  format=None):
         try:
             instance = get_user_model().objects.get(pk=id)
         except:
-            return Response({"status":status.HTTP_404_NOT_FOUND})
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-        serializer = UpdateUserSerializer(instance, data=request.data,\
+        serializer = self.serializer_class(instance, data=request.data,\
                                           partial=True)
 
         if serializer.is_valid():

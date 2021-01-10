@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from .models import ShopProfile, ShopItems, Category
 from .serializers import ShopProfileSerializer, ShopProfileUpdateSerializer, \
                          ShopItemSerializer, ShopItemDetailsSerializer, \
@@ -12,7 +13,7 @@ from db_utils.connect import dictfetchall, dictfetchone
 from django.db import connection
 
 
-class ShopProfileList(APIView):
+class ShopProfileList(GenericAPIView):
     """
     API for getting all Shop Profiles and add new Shop Profiles
     """   
@@ -28,14 +29,15 @@ class ShopProfileList(APIView):
         serializer = self.serializer_class(data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(shopid=request.user)
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ShopProfileDetail(APIView):
+class ShopProfileDetail(GenericAPIView):
     """API for getting and updating Shop Profiles"""
     serializer_class = ShopProfileUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated,]
 
     def get(self,request,format=None):
         try:
@@ -58,52 +60,55 @@ class ShopProfileDetail(APIView):
 
 
 class GetItemsByShop(APIView):
-    """Fetch Shop items by user"""
+    """Fetch Shop items"""
     def get(self, request, format=None):
-            try:
-                items = ShopItems.objects.filter(shopid=request.user)
-                item_data = ShopItemDetailsSerializer(items, many=True)
-                return Response(item_data.data)
-            except:
-                return Response({"status":status.HTTP_404_NOT_FOUND})
+        items = ShopItems.objects.filter(shopid = request.user)
+        if items:
+            item_data = ShopItemDetailsSerializer(items, many=True)
+            return Response(item_data.data) 
+        else:
+            return Response(status = status.HTTP_404_NOT_FOUND)                
 
 
 class GetItemsByShopId(APIView):
     """Fetch Shop items by shop id"""
     def get(self, request, shopid, format=None):
-            try:
-                items = ShopItems.objects.filter(shopid=shopid)
-                item_data = ShopItemDetailsSerializer(items, many=True)
-                return Response(item_data.data)
-            except:
-                return Response({"status":status.HTTP_404_NOT_FOUND})       
+        items = ShopItems.objects.filter(shopid = request.user)
+        if items:
+            item_data = ShopItemDetailsSerializer(items, many=True)
+            return Response(item_data.data) 
+        else:
+            return Response(status = status.HTTP_404_NOT_FOUND)       
             
 
-class AddItemsByShop(APIView):
+class AddItemsByShop(GenericAPIView):
     """Add new items for shops"""
+    permission_classes = [ permissions.IsAuthenticated, ]
+    serializer_class = ShopItemDetailsSerializer
+
     def post(self, request, format=None):
-        serializer = ShopItemDetailsSerializer(data=request.data, partial=True)
+        serializer = self.serializer_class(data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(shopid = request.user)
-            return Response({
-                "itemInfo": serializer.data,
-                "status": status.HTTP_201_CREATED
-            })
+            return Response({"itemInfo": serializer.data},\
+                            status= status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
-class UpdateItemByShop(APIView):
+class UpdateItemByShop(GenericAPIView):
     """Update the item for a shop"""
+    permission_classes = [permissions.IsAuthenticated,]
+    serializer_class = ShopItemUpdateSerializer
 
     def put(self, request, id):
         try:
             item_instance = ShopItems.objects.get(id=id)
         except:
-            return Response({"status":status.HTTP_404_NOT_FOUND})
+            return Response(status=status.HTTP_404_NOT_FOUND)
         
-        serializer = ShopItemUpdateSerializer(item_instance, \
-                                              data=request.data, partial=True)
+        serializer = self.serializer_class(item_instance, \
+                                           data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -120,11 +125,14 @@ class UpdateItemByShop(APIView):
             return Response({"msg":"Item not found"}, status = status.HTTP_404_NOT_FOUND)
 
 
-class AddCategory(APIView):
+class AddCategory(GenericAPIView):
     """Add new categories"""
+    permission_classes = [permissions.IsAuthenticated,]
+    serializer_class = CategorySerializer
     parser_classes = [MultiPartParser, FormParser]
+
     def post(self, request, format=None):
-        serializer = CategorySerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -132,16 +140,19 @@ class AddCategory(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EditCategory(APIView):
+class EditCategory(GenericAPIView):
     """Edit categories"""
+    permission_classes = [permissions.IsAuthenticated,]
+    serializer_class = CategorySerializer
     parser_classes = [MultiPartParser, FormParser]
+
     def put(self, request, cat, format=None):
       try:
         instance = Category.objects.get(cat_name=cat)
       except Category.DoesNotExist:
         return Response(state=status.HTTP_404_NOT_FOUND)
 
-      serializer = CategorySerializer(instance, data = request.data, partial=True)
+      serializer = self.serializer_class(instance, data = request.data, partial=True)
       if serializer.is_valid():
           serializer.save()
           return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -159,11 +170,12 @@ class GetCategoryInfo(APIView):
         return Response(serializer.data)
 
 
-class GetShopsByCategory(APIView):
+class GetShopsByCategory(GenericAPIView):
     """Get all shops by category"""
+    serializer_class = GetShopByCatSerializer
 
     def post(self, request, format=None):
-        serializer = GetShopByCatSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             cat = serializer.data['cat_name']
             shops = ShopProfile.objects.filter(category=cat)

@@ -108,7 +108,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://myecom12.herokuapp.com"
+    "https://myecom12.herokuapp.com"
 ]
 
 

@@ -73,7 +73,7 @@ class GetItemsByShop(APIView):
 class GetItemsByShopId(APIView):
     """Fetch Shop items by shop id"""
     def get(self, request, shopid, format=None):
-        items = ShopItems.objects.filter(shopid = request.user)
+        items = ShopItems.objects.filter(shopid = shopid)
         if items:
             item_data = ShopItemDetailsSerializer(items, many=True)
             return Response(item_data.data) 

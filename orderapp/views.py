@@ -1,11 +1,14 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
-from .serializers import OrderSerializer
+from rest_framework.generics import GenericAPIView
+from .serializers import OrderSerializer, OrderInfoSerializer, \
+                         OrderLineSerializer
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from db_utils.connect import dictfetchall, dictfetchone
 from datetime import date
 from django.db import connection, transaction
+from .models import ECH, ECL
 
 
 class CreateOrder(APIView):
@@ -66,3 +69,72 @@ class GetUserOrders(APIView):
       order_lines = dictfetchall(cur)
 
     return Response({"HeaderInfo":order_header, "LineInfo":order_lines}, status=status.HTTP_200_OK)
+
+
+class GetShopOrderHeader(GenericAPIView):
+  """
+    Fetch Order Header info for the shopkeeper
+  """
+  serializer_class = OrderInfoSerializer
+  permission_classes = [permissions.IsAuthenticated,]
+
+  def get(self, request):
+    order_header = ECH.objects.filter(HSHOP = request.user.id)
+    if order_header:
+      order_data = self.serializer_class(order_header, many = True)
+      return Response(order_data.data, status = status.HTTP_200_OK)
+    else:
+      return Response(status = status.HTTP_404_NOT_FOUND)
+
+
+class GetShopOrderLines(GenericAPIView):
+  """
+    Fetch Order Line info for the shopkeeper
+  """  
+  serializer_class = OrderLineSerializer
+  permission_classes = [permissions.IsAuthenticated,]
+
+  def get(self, request, id):
+    order_lines = ECL.objects.filter(LORD = id)
+    if order_lines:
+      order_lines = self.serializer_class(order_lines, many=True)
+      return Response(order_lines.data, status = status.HTTP_200_OK)
+    else:
+      return Response(status.HTTP_404_NOT_FOUND)
+
+
+class CompleteOrder(GenericAPIView):
+  """
+    Update Order to completed
+  """
+  permission_classes = [permissions.IsAuthenticated,]
+
+  def put(self, request, id):
+    with connection.cursor() as cur:
+      cur.execute(""" select * from orderapp_ech where "HORD" = %s """, [id])
+      if cur.rowcount > 0:
+        cur.execute(""" update orderapp_ech set "HSTS" = %s where "HORD" = \
+                    %s """, ["COMPLETED", id])
+        return Response(status = status.HTTP_200_OK)
+      else:
+        return Response(status = status.HTTP_404_NOT_FOUND)
+
+class CancelOrder(GenericAPIView):
+  """
+    Update Order to Cancelled
+  """
+  permission_classes = [permissions.IsAuthenticated,] 
+
+  def put(self, request, id):
+    with connection.cursor() as cur:
+      cur.execute(""" select * from orderapp_ech where "HORD" = %s """, [id])
+      if cur.rowcount > 0:
+        cur.execute(""" update orderapp_ech set "HSTS" = %s where "HORD" = \
+                    %s """, ["CANCELLED", id])
+        return Response(status = status.HTTP_200_OK)
+      else:
+        return Response(status = status.HTTP_404_NOT_FOUND)
+
+
+
+      

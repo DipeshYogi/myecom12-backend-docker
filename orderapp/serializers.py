@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ECH
+from .models import ECH, ECL
 
 class OrderSerializer(serializers.Serializer):
   """Order Serializer"""
@@ -8,23 +8,17 @@ class OrderSerializer(serializers.Serializer):
   HPROD = serializers.JSONField(required=True)
 
 
-# class OrderInfoSerializer(serializers.Serializer):
-#   """Order info"""
-#   HORD = serializers.IntegerField(required=True)
-#   HCUST = serializers.IntegerField(required=True)
-#   HSHOP = serializers.IntegerField(required=True)
-#   HSNME = serializers.CharField(required=True)
-#   HEDTE = serializers.DateField(required=True)
-#   HSTS = serializers.CharField(required=True)
+class OrderInfoSerializer(serializers.ModelSerializer):
+  """Order info"""
+  class Meta:
+    model = ECH
+    fields = '__all__'
 
 
-# class OrderLineSerializer(serializers.Serializer):
-#   """Order line details serializer"""
-#   LORD = serializers.IntegerField(required=True)
-#   LLINE = serializers.IntegerField(required=True)
-#   LPROD = serializers.CharField(required=True)
-#   LQORD = serializers.IntegerField(required=True)
-#   LPRIC = serializers.IntegerField(required=True)
-#   LDISC = serializers.IntegerField(required=True)
+class OrderLineSerializer(serializers.Serializer):
+  """Order line details serializer"""
+  class Meta:
+    model = ECL
+    fields = '__all__'
 
     
